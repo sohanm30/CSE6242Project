@@ -1,0 +1,124 @@
+.Prediction-container {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.Prediction-container h2 {
+  margin-top: 0;
+  color: #282c34;
+}
+
+.Winner-text {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #007bff;
+  margin: 0;
+}
+
+.Winner-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 10px;
+}
+
+
+
+.Probability-text {
+  font-size: 1.2em;
+  color: #555;
+}
+
+.Shap-container {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.Shap-container h3 {
+  margin-top: 0;
+  color: #282c34;
+}
+
+.Shap-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.Shap-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.Shap-item:last-child {
+  border-bottom: none;
+}
+
+.Feature-name {
+  font-weight: 500;
+}
+
+.Feature-impact {
+  font-weight: bold;
+}
+
+.Feature-impact.positive {
+  color: green;
+}
+
+.Feature-impact.negative {
+  color: red;
+}
+
+/* Key Players */
+.key-players-container {
+  margin-top: 20px;
+}
+.players-columns {
+  display: flex;
+  justify-content: space-around;
+}
+.team-players h5 {
+  margin-bottom: 5px;
+  text-align: center;
+}
+.team-players ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  text-align: center;
+}
+
+/* Team Metrics */
+.metrics-container {
+  margin-top: 20px;
+}
+.metrics-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+}
+.metrics-table th, .metrics-table td {
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+}
+.metrics-table th {
+  background-color: #f2f2f2;
+}
+
+/* Path to Victory */
+.path-container {
+  margin-top: 20px;
+}
+.path-steps {
+  list-style-position: inside;
+  padding-left: 0;
+}
