@@ -1,7 +1,7 @@
 import React from 'react';
 import './components.css';
 
-function TeamMetrics({ metrics }) {
+function TeamMetrics({ metrics, homeTeam, awayTeam }) {
   return (
     <div className="metrics-container">
       <h4>Tale of the Tape</h4>
@@ -9,8 +9,8 @@ function TeamMetrics({ metrics }) {
         <thead>
           <tr>
             <th>Metric</th>
-            <th>Home</th>
-            <th>Away</th>
+            <th>{homeTeam || 'Home'}</th>
+            <th>{awayTeam || 'Away'}</th>
           </tr>
         </thead>
         <tbody>

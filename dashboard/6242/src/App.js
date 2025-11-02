@@ -17,21 +17,62 @@ function App() {
     setAwayTeam(event.target.value);
   };
 
-  const handleAnalyze = () => {
-    const fakeData = {
-      ...FAKE_RESULTS,
-      prediction: {
-        ...FAKE_RESULTS.prediction,
-        winner: homeTeam,
-        WinnerLogoComponent: TEAM_MAP[homeTeam].component,
-      },
-      // In a real app, you'd dynamically set the loser for Path to Victory
-      pathToVictory: {
-        ...FAKE_RESULTS.pathToVictory,
-        teamName: awayTeam,
+  const handleAnalyze = async () => {
+    try {
+      const response = await fetch('http://localhost:5001/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ home_team: homeTeam, away_team: awayTeam }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        alert(`Error: ${err.error}`);
+        return;
       }
+
+      const data = await response.json();
+      // data structure: {matchup, probabilities: {home, away}, prediction: {winner, confidence, predicted_spread, consistent}, season_stats: {home, away}, meta}
+      
+      // Map API response to frontend format
+      const winner = data.prediction.winner;
+      const winnerProb = Math.round(data.prediction.confidence * 100);
+
+      // Format season stats into metrics array
+      const homeStats = data.season_stats?.home;
+      const awayStats = data.season_stats?.away;
+      const metrics = homeStats && awayStats ? [
+        { name: 'Record', homeValue: `${homeStats.wins}-${homeStats.losses}`, awayValue: `${awayStats.wins}-${awayStats.losses}` },
+        { name: 'PPG', homeValue: homeStats.ppg.toFixed(1), awayValue: awayStats.ppg.toFixed(1) },
+        { name: 'FG%', homeValue: `${(homeStats.fg_pct * 100).toFixed(1)}%`, awayValue: `${(awayStats.fg_pct * 100).toFixed(1)}%` },
+        { name: '3P%', homeValue: `${(homeStats.three_pct * 100).toFixed(1)}%`, awayValue: `${(awayStats.three_pct * 100).toFixed(1)}%` },
+        { name: 'Rebounds', homeValue: homeStats.rebounds.toFixed(1), awayValue: awayStats.rebounds.toFixed(1) },
+        { name: 'Assists', homeValue: homeStats.assists.toFixed(1), awayValue: awayStats.assists.toFixed(1) },
+      ] : FAKE_RESULTS.metrics;
+
+      const formattedData = {
+        ...FAKE_RESULTS,  // keep fake explanation/pathToVictory for now
+        prediction: {
+          winner: winner,
+          probability: winnerProb,
+          WinnerLogoComponent: TEAM_MAP[winner]?.component || null,
+          predicted_spread: data.prediction.predicted_spread,
+          consistent: data.prediction.consistent,
+        },
+        matchup: data.matchup,
+        probabilities: data.probabilities,
+        metrics: metrics,
+        pathToVictory: {
+          ...FAKE_RESULTS.pathToVictory,
+          teamName: awayTeam,
+        },
+      };
+
+      setResults(formattedData);
+    } catch (error) {
+      console.error('Prediction failed:', error);
+      alert('Failed to get prediction. Make sure Flask server is running on port 5001.');
     }
-    setResults(fakeData);
   };
 
   const handleCloseModal = () => {
