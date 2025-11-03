@@ -4,6 +4,7 @@
   background-color: #f9f9f9;
   border-radius: 8px;
   border: 1px solid #eee;
+  text-align: center;
 }
 
 .Prediction-container h2 {
@@ -26,11 +27,44 @@
   margin-bottom: 10px;
 }
 
+.TugOfWar-bar {
+  display: flex;
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 20px;
+  background-color: #e9ecef;
+}
 
+.TugOfWar-segment {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 1.2rem;
+  transition: width 0.5s ease-in-out;
+  overflow: hidden;
+}
 
-.Probability-text {
-  font-size: 1.2em;
+.TugOfWar-segment.home {
+  background-color: #007bff;
+}
+
+.TugOfWar-segment.away {
+  background-color: #dc3545;
+}
+
+.TugOfWar-segment span {
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.Spread-text {
+  font-size: 1.1em;
   color: #555;
+  margin: 10px 0 0 0;
 }
 
 .Shap-container {

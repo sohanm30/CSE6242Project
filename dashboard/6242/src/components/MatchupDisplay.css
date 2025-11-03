@@ -1,0 +1,35 @@
+.Matchup-Display {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  margin: 40px auto;
+  max-width: 900px;
+  gap: 20px;
+}
+
+.Matchup-Team-Container {
+  display: flex;
+  flex-direction: column;
+  align-items: center; 
+  flex: 1;
+}
+
+.Matchup-VS {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #888;
+  padding-top: 80px; 
+}
+
+.Matchup-VS:empty {
+  display: none;
+}
+
+.Team-Name {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-top: 15px;
+  color: #333;
+  text-align: center;
+  max-width: 300px; 
+}
