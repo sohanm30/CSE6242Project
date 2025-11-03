@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import './App.css';
-import ResultsModal from './components/ResultsModal';
 import { TEAM_MAP, TEAM_NAMES } from './data/teams';
 import { FAKE_RESULTS } from './data/fakeData';
+import ResultsDisplay from './components/ResultsDisplay';
 
 function App() {
   const [homeTeam, setHomeTeam] = useState('');
@@ -18,6 +18,8 @@ function App() {
   };
 
   const handleAnalyze = async () => {
+    setResults(null); 
+    
     try {
       const response = await fetch('http://localhost:5001/predict', {
         method: 'POST',
@@ -32,13 +34,10 @@ function App() {
       }
 
       const data = await response.json();
-      // data structure: {matchup, probabilities: {home, away}, prediction: {winner, confidence, predicted_spread, consistent}, season_stats: {home, away}, meta}
       
-      // Map API response to frontend format
       const winner = data.prediction.winner;
       const winnerProb = Math.round(data.prediction.confidence * 100);
 
-      // Format season stats into metrics array
       const homeStats = data.season_stats?.home;
       const awayStats = data.season_stats?.away;
       const metrics = homeStats && awayStats ? [
@@ -51,7 +50,7 @@ function App() {
       ] : FAKE_RESULTS.metrics;
 
       const formattedData = {
-        ...FAKE_RESULTS,  // keep fake explanation/pathToVictory for now
+        ...FAKE_RESULTS, 
         prediction: {
           winner: winner,
           probability: winnerProb,
@@ -62,6 +61,7 @@ function App() {
         matchup: data.matchup,
         probabilities: data.probabilities,
         metrics: metrics,
+        explanation: FAKE_RESULTS.explanation, 
         pathToVictory: {
           ...FAKE_RESULTS.pathToVictory,
           teamName: awayTeam,
@@ -75,10 +75,6 @@ function App() {
     }
   };
 
-  const handleCloseModal = () => {
-    setResults(null);
-  }
-
   const awayTeamOptions = TEAM_NAMES.filter(team => team !== homeTeam);
   const homeTeamOptions = TEAM_NAMES.filter(team => team !== awayTeam);
 
@@ -90,10 +86,10 @@ function App() {
       <header className="App-header">
         <h1>NBA GamePlan: Matchup Predictor</h1>
       </header>
+      
       <div className="Dashboard">
         <div className="Team-selectors">
           <div className="Team-selector-container">
-            {HomeLogo && <HomeLogo size={50} />}
             <div className="Team-selector">
               <label htmlFor="home-team">Home Team</label>
               <select id="home-team" className="Team-dropdown" value={homeTeam} onChange={handleHomeChange}>
@@ -105,7 +101,6 @@ function App() {
             </div>
           </div>
           <div className="Team-selector-container">
-            {AwayLogo && <AwayLogo size={50} />}
             <div className="Team-selector">
               <label htmlFor="away-team">Away Team</label>
               <select id="away-team" className="Team-dropdown" value={awayTeam} onChange={handleAwayChange}>
@@ -122,7 +117,22 @@ function App() {
         </button>
       </div>
 
-      {results && <ResultsModal results={results} onClose={handleCloseModal} />}
+      <div className="Matchup-Display">
+        <div className="Matchup-Team-Container">
+          {HomeLogo && <HomeLogo size={200} />}
+          {homeTeam && <h2 className="Team-Name">{homeTeam}</h2>}
+        </div>
+        <div className="Matchup-VS">
+          {HomeLogo && AwayLogo && <span>VS</span>}
+        </div>
+        <div className="Matchup-Team-Container">
+          {AwayLogo && <AwayLogo size={200} />}
+          {awayTeam && <h2 className="Team-Name">{awayTeam}</h2>}
+        </div>
+      </div>
+
+      <ResultsDisplay results={results} />
+
     </div>
   );
 }

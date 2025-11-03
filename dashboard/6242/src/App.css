@@ -42,8 +42,6 @@ body {
   gap: 15px;
 }
 
-
-
 .Team-selector {
   display: flex;
   flex-direction: column;
@@ -81,4 +79,50 @@ body {
 .Results {
   margin-top: 30px;
   text-align: left;
+}
+
+.Matchup-Display {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 40px auto;
+  max-width: 900px;
+  gap: 20px;
+}
+
+.Matchup-Team-Container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 200px;
+}
+
+.Matchup-Display .Matchup-Team-Container:first-child {
+  align-items: flex-end;
+  padding-right: 20px;
+}
+
+.Matchup-Display .Matchup-Team-Container:last-child {
+  align-items: flex-start;
+  padding-left: 20px;
+}
+
+.Matchup-VS {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #888;
+  padding: 0 20px;
+}
+
+.Team-Name {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-top: 15px;
+  color: #333;
+  text-align: center;
+}
+
+.Matchup-VS:empty {
+  display: none;
 }

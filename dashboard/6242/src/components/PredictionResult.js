@@ -4,7 +4,10 @@ import './components.css';
 function PredictionResult({ winner, probability, WinnerLogoComponent, predictedSpread, matchup }) {
   if (!winner) return null;
 
-  // Format spread display
+  const isHomeWinner = winner === matchup.home_team;
+  const homeProb = isHomeWinner ? probability : 100 - probability;
+  const awayProb = 100 - homeProb;
+
   let spreadText = '';
   if (predictedSpread !== null && predictedSpread !== undefined && matchup) {
     const absSpread = Math.abs(predictedSpread).toFixed(1);
@@ -15,12 +18,30 @@ function PredictionResult({ winner, probability, WinnerLogoComponent, predictedS
   return (
     <div className="Prediction-container">
       <h2>Prediction</h2>
+      
+      {/* Winner and Spread Text */}
       <div className="Winner-info">
         {WinnerLogoComponent && <WinnerLogoComponent size={60} />}
         <p className="Winner-text">{winner}</p>
       </div>
-      <p className="Probability-text">Win Probability: {probability}%</p>
-      {spreadText && <p className="Spread-text">Predicted Spread: {spreadText}</p>}
+      {spreadText && <p className="Spread-text">{spreadText}</p>}
+
+      {/* Probability Bar */}
+      <div className="TugOfWar-bar">
+        <div 
+          className="TugOfWar-segment home" 
+          style={{ width: `${homeProb}%` }}
+        >
+          <span>{homeProb.toFixed(0)}%</span>
+        </div>
+        <div 
+          className="TugOfWar-segment away" 
+          style={{ width: `${awayProb}%` }}
+        >
+          <span>{awayProb.toFixed(0)}%</span>
+        </div>
+      </div>
+
     </div>
   );
 }
