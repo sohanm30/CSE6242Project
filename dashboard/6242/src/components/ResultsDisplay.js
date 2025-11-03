@@ -23,8 +23,9 @@ function ResultsDisplay({ results }) {
         matchup={results.matchup}
       />
   
-      {/* Keys to the Game */}
+      {/* Keys to the Game 
       <ShapExplanation features={results.explanation} />
+      */}
       
       {/* Tale of the Tape */}
       <TeamMetrics 
