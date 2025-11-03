@@ -3,6 +3,7 @@ import './App.css';
 import { TEAM_MAP, TEAM_NAMES } from './data/teams';
 import { FAKE_RESULTS } from './data/fakeData';
 import ResultsDisplay from './components/ResultsDisplay';
+import MatchupDisplay from './components/MatchupDisplay';
 
 function App() {
   const [homeTeam, setHomeTeam] = useState('');
@@ -117,19 +118,12 @@ function App() {
         </button>
       </div>
 
-      <div className="Matchup-Display">
-        <div className="Matchup-Team-Container">
-          {HomeLogo && <HomeLogo size={200} />}
-          {homeTeam && <h2 className="Team-Name">{homeTeam}</h2>}
-        </div>
-        <div className="Matchup-VS">
-          {HomeLogo && AwayLogo && <span>VS</span>}
-        </div>
-        <div className="Matchup-Team-Container">
-          {AwayLogo && <AwayLogo size={200} />}
-          {awayTeam && <h2 className="Team-Name">{awayTeam}</h2>}
-        </div>
-      </div>
+      <MatchupDisplay 
+        homeTeam={homeTeam}
+        awayTeam={awayTeam}
+        HomeLogo={HomeLogo}
+        AwayLogo={AwayLogo}
+      />
 
       <ResultsDisplay results={results} />
 
