@@ -19,8 +19,8 @@ function App() {
   };
 
   const handleAnalyze = async () => {
-    setResults(null); 
-    
+    setResults(null);
+
     try {
       const response = await fetch('http://localhost:5001/predict', {
         method: 'POST',
@@ -35,7 +35,7 @@ function App() {
       }
 
       const data = await response.json();
-      
+
       const winner = data.prediction.winner;
       const winnerProb = Math.round(data.prediction.confidence * 100);
 
@@ -51,7 +51,7 @@ function App() {
       ] : FAKE_RESULTS.metrics;
 
       const formattedData = {
-        ...FAKE_RESULTS, 
+        ...FAKE_RESULTS,
         prediction: {
           winner: winner,
           probability: winnerProb,
@@ -62,7 +62,7 @@ function App() {
         matchup: data.matchup,
         probabilities: data.probabilities,
         metrics: metrics,
-        explanation: FAKE_RESULTS.explanation, 
+        explanations: data.explanations,
         pathToVictory: {
           ...FAKE_RESULTS.pathToVictory,
           teamName: awayTeam,
@@ -87,7 +87,7 @@ function App() {
       <header className="App-header">
         <h1>NBA GamePlan: Matchup Predictor</h1>
       </header>
-      
+
       <div className="Dashboard">
         <div className="Team-selectors">
           <div className="Team-selector-container">
@@ -118,7 +118,7 @@ function App() {
         </button>
       </div>
 
-      <MatchupDisplay 
+      <MatchupDisplay
         homeTeam={homeTeam}
         awayTeam={awayTeam}
         HomeLogo={HomeLogo}
@@ -126,7 +126,6 @@ function App() {
       />
 
       <ResultsDisplay results={results} />
-
     </div>
   );
 }

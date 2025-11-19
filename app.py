@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 
 import json
 from datetime import datetime
@@ -8,6 +9,7 @@ from typing import Any, Dict, Optional, Tuple
 import numpy as np
 import pandas as pd
 import xgboost as xgb
+import shap
 from difflib import get_close_matches
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -25,6 +27,8 @@ BASE_DIR = Path(__file__).resolve().parent
 # -----------------------------------------------------------------------------
 clf: Optional[xgb.XGBClassifier] = None
 reg_spread: Optional[xgb.XGBRegressor] = None
+explainer_clf: Optional[shap.TreeExplainer] = None
+explainer_reg: Optional[shap.TreeExplainer] = None
 team_data: Optional[pd.DataFrame] = None
 feature_importance: Optional[pd.DataFrame] = None
 teams: list[str] = []
@@ -113,7 +117,7 @@ def canonicalize_team(name: str) -> Optional[str]:
 
 
 def _load_models_and_data() -> None:
-    global clf, reg_spread, team_data, feature_importance, teams
+    global clf, reg_spread, explainer_clf, explainer_reg, team_data, feature_importance, teams
     global has_player_features, use_ewma, feature_suffix, feature_columns
 
     # Load models (prefer modern)
@@ -149,6 +153,7 @@ def _load_models_and_data() -> None:
             break
     if not reg_loaded:
         reg_spread = None  # allow API without spread
+
 
     # Load data (prefer modern with players)
     data_paths = [
@@ -237,6 +242,75 @@ def _load_models_and_data() -> None:
     use_ewma = nonlocal_use_ewma
     feature_suffix = suffix
     feature_columns[:] = base_features
+
+    # Initialize SHAP explainers using Model-Agnostic approach (Permutation/Partition)
+    # This avoids internal tree parsing errors by treating the model as a function
+    # Note: team_data global is not set yet, use team_data_local
+    
+    if clf is not None and team_data_local is not None:
+        try:
+            # Create a background dataset (masker) from the training data distribution
+            # We use a small sample (e.g., 50 rows) to keep it fast
+            # Ensure we only use the feature columns
+            # Filter columns that actually exist in the data
+            # Note: season_late and season_mid might not be in team_data_local if they are created on the fly
+            # We need to ensure they exist in background data if the model expects them
+            
+            # Check which columns are missing from team_data_local but expected by feature_columns
+            missing_cols = [c for c in feature_columns if c not in team_data_local.columns]
+            
+            # Create a local copy to add missing columns for background data
+            bg_source = team_data_local.copy()
+            for c in missing_cols:
+                if c in ['season_late', 'season_mid']:
+                    bg_source[c] = 0 # Default value
+                else:
+                    bg_source[c] = 0
+            
+            available_features = feature_columns # Now we have all of them
+            background_data = bg_source[available_features].sample(50, random_state=42).fillna(0)
+            
+            # Use the predict_proba function for classification
+            # We need to wrap it to return only the positive class probability
+            def clf_predict(X):
+                if isinstance(X, pd.DataFrame):
+                    # Ensure columns match what model expects (might need to reorder/filter)
+                    # For now, just pass through, assuming X has correct columns
+                    pass
+                return clf.predict_proba(X)[:, 1]
+                
+            explainer_clf = shap.Explainer(clf_predict, background_data)
+        except Exception as e:
+            print(f"Warning: Could not initialize classification explainer: {e}")
+            explainer_clf = None
+    else:
+        explainer_clf = None
+
+    if reg_spread is not None and team_data_local is not None:
+        try:
+            # Same logic for regression: ensure all features exist in background data
+            missing_cols = [c for c in feature_columns if c not in team_data_local.columns]
+            bg_source = team_data_local.copy()
+            for c in missing_cols:
+                if c in ['season_late', 'season_mid']:
+                    bg_source[c] = 0
+                else:
+                    bg_source[c] = 0
+            
+            available_features = feature_columns
+            background_data = bg_source[available_features].sample(50, random_state=42).fillna(0)
+            
+            def reg_predict(X):
+                # if isinstance(X, pd.DataFrame):
+                #     X = X[feature_columns]
+                return reg_spread.predict(X)
+                
+            explainer_reg = shap.Explainer(reg_predict, background_data)
+        except Exception as e:
+            print(f"Warning: Could not initialize regression explainer: {e}")
+            explainer_reg = None
+    else:
+        explainer_reg = None
 
     # Feature importance (optional)
     fi_paths = [
@@ -467,6 +541,52 @@ def predict() -> Any:
     home_season_stats = get_season_stats(home_team)
     away_season_stats = get_season_stats(away_team)
 
+    # SHAP Explanations
+    explanations = []
+    if explainer_clf is not None:
+        try:
+            # Calculate SHAP values using the Explainer API
+            # The model-agnostic explainer returns an Explanation object
+            # Ensure X_pred has the same columns as the background data
+            # The explainer was initialized with 'available_features' from team_data_local
+            # We need to make sure X_pred only contains those columns
+            
+            # Get the feature names from the explainer's masker
+            if hasattr(explainer_clf.masker, 'feature_names'):
+                 masker_features = explainer_clf.masker.feature_names
+                 X_shap = X_pred[masker_features]
+            else:
+                 # Fallback if masker doesn't have feature_names (unlikely for DataFrame masker)
+                 X_shap = X_pred
+                 
+            shap_explanation = explainer_clf(X_shap)
+            
+            # shap_explanation.values shape: (1, n_features)
+            vals = shap_explanation.values[0]
+            
+            # Create explanation list
+            feature_names = X_pred.columns.tolist()
+            feature_values = X_pred.iloc[0].tolist()
+            
+            for name, val, impact in zip(feature_names, feature_values, vals):
+                # Include all impacts; filter later if needed
+                explanations.append({
+                    "feature": name,
+                    "value": val,
+                    "impact": float(impact),  # contribution to model output
+                    "type": "positive" if impact > 0 else "negative"
+                })
+            
+            # Sort by absolute impact and keep top 10
+            explanations.sort(key=lambda x: abs(x["impact"]), reverse=True)
+            
+        except Exception as e:
+            print(f"Error calculating SHAP values: {e}")
+            import traceback; traceback.print_exc()
+            explanations = []
+    else:
+        print("DEBUG: explainer_clf is None")
+
     return jsonify(
         {
             "matchup": {
@@ -483,6 +603,7 @@ def predict() -> Any:
                 "predicted_spread": spread_value,  # positive means home favored
                 "consistent": consistency,
             },
+            "explanations": explanations[:10], # Return top 10 factors
             "season_stats": {
                 "home": home_season_stats,
                 "away": away_season_stats,
@@ -496,5 +617,6 @@ def predict() -> Any:
 
 
 if __name__ == "__main__":
-    # Default port 5001 to avoid conflicts
-    app.run(host="0.0.0.0", port=5001, debug=False)
+    # Use PORT environment variable if set, default to 5001
+    port = int(os.getenv("PORT", "5001"))
+    app.run(host="0.0.0.0", port=port, debug=False)
