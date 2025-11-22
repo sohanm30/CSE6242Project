@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import './App.css';
 import { TEAM_MAP, TEAM_NAMES } from './data/teams';
-import { FAKE_RESULTS } from './data/fakeData';
 import ResultsDisplay from './components/ResultsDisplay';
 import MatchupDisplay from './components/MatchupDisplay';
 
@@ -9,17 +8,21 @@ function App() {
   const [homeTeam, setHomeTeam] = useState('');
   const [awayTeam, setAwayTeam] = useState('');
   const [results, setResults] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleHomeChange = (event) => {
     setHomeTeam(event.target.value);
+    setResults(null); 
   };
 
   const handleAwayChange = (event) => {
     setAwayTeam(event.target.value);
+    setResults(null); 
   };
 
   const handleAnalyze = async () => {
     setResults(null);
+    setIsLoading(true);
 
     try {
       const response = await fetch('http://localhost:5001/predict', {
@@ -41,6 +44,7 @@ function App() {
 
       const homeStats = data.season_stats?.home;
       const awayStats = data.season_stats?.away;
+
       const metrics = homeStats && awayStats ? [
         { name: 'Record', homeValue: `${homeStats.wins}-${homeStats.losses}`, awayValue: `${awayStats.wins}-${awayStats.losses}` },
         { name: 'PPG', homeValue: homeStats.ppg.toFixed(1), awayValue: awayStats.ppg.toFixed(1) },
@@ -48,10 +52,9 @@ function App() {
         { name: '3P%', homeValue: `${(homeStats.three_pct * 100).toFixed(1)}%`, awayValue: `${(awayStats.three_pct * 100).toFixed(1)}%` },
         { name: 'Rebounds', homeValue: homeStats.rebounds.toFixed(1), awayValue: awayStats.rebounds.toFixed(1) },
         { name: 'Assists', homeValue: homeStats.assists.toFixed(1), awayValue: awayStats.assists.toFixed(1) },
-      ] : FAKE_RESULTS.metrics;
+      ] : []; 
 
       const formattedData = {
-        ...FAKE_RESULTS,
         prediction: {
           winner: winner,
           probability: winnerProb,
@@ -63,16 +66,14 @@ function App() {
         probabilities: data.probabilities,
         metrics: metrics,
         explanations: data.explanations,
-        pathToVictory: {
-          ...FAKE_RESULTS.pathToVictory,
-          teamName: awayTeam,
-        },
       };
 
       setResults(formattedData);
     } catch (error) {
       console.error('Prediction failed:', error);
       alert('Failed to get prediction. Make sure Flask server is running on port 5001.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -113,8 +114,13 @@ function App() {
             </div>
           </div>
         </div>
-        <button className="Analyze-button" onClick={handleAnalyze} disabled={!homeTeam || !awayTeam}>
-          Analyze Matchup
+        
+        <button 
+          className="Analyze-button" 
+          onClick={handleAnalyze} 
+          disabled={!homeTeam || !awayTeam || isLoading}
+        >
+          {isLoading ? 'Analyzing...' : 'Analyze Matchup'}
         </button>
       </div>
 
@@ -124,6 +130,13 @@ function App() {
         HomeLogo={HomeLogo}
         AwayLogo={AwayLogo}
       />
+
+      {isLoading && (
+        <div className="Loading-container">
+          <div className="Loading-spinner"></div>
+          <p>Crunching the numbers...</p>
+        </div>
+      )}
 
       <ResultsDisplay results={results} />
     </div>

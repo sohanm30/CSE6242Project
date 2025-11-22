@@ -20,10 +20,9 @@ function ResultsDisplay({ results }) {
         probability={results.prediction.probability}
         WinnerLogoComponent={results.prediction.WinnerLogoComponent}
         predictedSpread={results.prediction.predicted_spread}
+        consistent={results.prediction.consistent}
         matchup={results.matchup}
       />
-      {/* Keys to the Game */}
-      <ShapExplanation features={results.explanations || []} />
 
       {/* Tale of the Tape */}
       <TeamMetrics
@@ -32,12 +31,16 @@ function ResultsDisplay({ results }) {
         awayTeam={results.matchup?.away_team}
       />
 
-      {/* Path to Victory
+      {/* Path to Victory */}
       <PathToVictory 
-        teamName={results.pathToVictory.teamName} 
-        steps={results.pathToVictory.steps} 
+        features={results.explanations} 
+        winner={results.prediction.winner}
+        homeTeam={results.matchup?.home_team}
       /> 
-      */}
+
+      {/* Keys to the Game */}
+      <ShapExplanation features={results.explanations || []} />
+      
     </div>
   );
 }

@@ -67,6 +67,16 @@
   margin: 10px 0 0 0;
 }
 
+.Spread-text.warning {
+  color: #d9534f;
+  font-size: 1rem;
+  background-color: #fff3cd;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ffeeba;
+  display: inline-block;
+}
+
 .Shap-container {
   margin-top: 20px;
   padding: 20px;
@@ -80,79 +90,203 @@
   color: #282c34;
 }
 
-.Shap-list {
-  list-style-type: none;
-  padding: 0;
-}
-
-.Shap-item {
+.chart-row {
   display: flex;
-  justify-content: space-between;
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
+  align-items: center;
+  margin-bottom: 10px;
 }
 
-.Shap-item:last-child {
-  border-bottom: none;
-}
-
-.Feature-name {
+.chart-label {
+  flex: 0 0 180px;
+  font-size: 0.9rem;
+  text-align: right;
+  padding-right: 15px;
+  color: #444;
   font-weight: 500;
 }
 
-.Feature-impact {
-  font-weight: bold;
-}
-
-.Feature-impact.positive {
-  color: green;
-}
-
-.Feature-impact.negative {
-  color: red;
-}
-
-/* Key Players */
-.key-players-container {
-  margin-top: 20px;
-}
-.players-columns {
+.bar-container {
+  flex: 1;
   display: flex;
-  justify-content: space-around;
-}
-.team-players h5 {
-  margin-bottom: 5px;
-  text-align: center;
-}
-.team-players ul {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-  text-align: center;
+  height: 24px;
+  position: relative;
+  background-color: #f0f0f0;
+  border-radius: 4px;
 }
 
-/* Team Metrics */
+.center-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #bbb;
+  z-index: 2;
+  transform: translateX(-50%);
+}
+
+.bar-side {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.bar-side.left {
+  justify-content: flex-end;
+}
+
+.bar-side.right {
+  justify-content: flex-start;
+}
+
+.bar {
+  height: 16px;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.bar.home {
+  background-color: #007bff;
+}
+
+.bar.away {
+  background-color: #dc3545;
+}
+
 .metrics-container {
   margin-top: 20px;
 }
+
 .metrics-table {
   width: 100%;
   border-collapse: collapse;
-  text-align: center;
-}
-.metrics-table th, .metrics-table td {
-  padding: 8px;
-  border-bottom: 1px solid #ddd;
-}
-.metrics-table th {
-  background-color: #f2f2f2;
+  table-layout: fixed;
 }
 
-/* Path to Victory */
+.metrics-table th {
+  background-color: #f2f2f2;
+  padding: 10px;
+  color: #555;
+}
+
+.metrics-table td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+.metric-name {
+  font-weight: bold;
+  color: #555;
+  text-align: left;
+}
+
+.metric-cell {
+  text-align: center;
+  position: relative;
+}
+
+.metric-text {
+  position: relative;
+  z-index: 2;
+  font-weight: bold;
+  color: #333;
+}
+
+.metric-bar-bg {
+  background-color: #eee;
+  height: 6px;
+  width: 80%;
+  margin: 5px auto 0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.metric-bar {
+  height: 100%;
+  border-radius: 3px;
+}
+
 .path-container {
   margin-top: 20px;
 }
+
 .path-steps {
-  list-style-position: inside;
+  list-style-type: none;
   padding-left: 0;
+}
+
+.path-step-item {
+  background-color: white;
+  margin-bottom: 10px;
+  padding: 15px;
+  border-radius: 6px;
+  border-left: 5px solid #007bff;
+  font-weight: 500;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.path-icon {
+  color: #007bff;
+  font-weight: bold;
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+.bar {
+  position: relative; 
+  cursor: crosshair;
+}
+
+.Shap-custom-tooltip {
+  position: fixed;
+  background-color: rgba(30, 30, 30, 0.95);
+  color: white;
+  padding: 12px;
+  border-radius: 6px;
+  z-index: 9999;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  min-width: 150px;
+  transform: translateY(-50%);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.tooltip-header {
+  font-weight: bold;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+  padding-bottom: 5px;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+
+.tooltip-row:last-child {
+  margin-bottom: 0;
+}
+
+.val-home {
+  color: #4dabf7;
+  font-weight: bold;
+}
+
+.val-away {
+  color: #ff8787;
+  font-weight: bold;
+}
+
+.val-neutral {
+  color: #e9ecef;
+  font-family: monospace;
 }
