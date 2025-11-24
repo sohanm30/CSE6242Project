@@ -14,17 +14,11 @@ from difflib import get_close_matches
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-# -----------------------------------------------------------------------------
-# App setup
-# -----------------------------------------------------------------------------
 app = Flask(__name__)
 CORS(app)
 
 BASE_DIR = Path(__file__).resolve().parent
 
-# -----------------------------------------------------------------------------
-# Load models and data once at startup
-# -----------------------------------------------------------------------------
 clf: Optional[xgb.XGBClassifier] = None
 reg_spread: Optional[xgb.XGBRegressor] = None
 explainer_clf: Optional[shap.TreeExplainer] = None
@@ -37,8 +31,6 @@ use_ewma: bool = False
 feature_suffix: str = ""
 feature_columns: list[str] = []
 
-# Common aliases to map full city names to canonical team labels in data
-# Built from frontend TEAM_MAP keys -> backend short names
 TEAM_ALIASES: Dict[str, str] = {
     # East
     "atlanta hawks": "Hawks",
@@ -88,27 +80,22 @@ def canonicalize_team(name: str) -> Optional[str]:
     if not n:
         return None
 
-    # Exact match
     if n in teams:
         return n
 
     low = n.lower()
-    # Alias map
     if low in TEAM_ALIASES and TEAM_ALIASES[low] in teams:
         return TEAM_ALIASES[low]
 
-    # Case-insensitive exact
     for t in teams:
         if t.lower() == low:
             return t
 
-    # Substring both ways
     for t in teams:
         tl = t.lower()
         if low in tl or tl in low:
             return t
 
-    # Fuzzy match
     candidates = get_close_matches(n, teams, n=1, cutoff=0.6)
     if candidates:
         return candidates[0]
@@ -120,7 +107,6 @@ def _load_models_and_data() -> None:
     global clf, reg_spread, explainer_clf, explainer_reg, team_data, feature_importance, teams
     global has_player_features, use_ewma, feature_suffix, feature_columns
 
-    # Load models (prefer modern)
     clf = xgb.XGBClassifier()
     reg_spread = xgb.XGBRegressor()
 
@@ -152,10 +138,9 @@ def _load_models_and_data() -> None:
             reg_loaded = True
             break
     if not reg_loaded:
-        reg_spread = None  # allow API without spread
+        reg_spread = None 
 
 
-    # Load data (prefer modern with players)
     data_paths = [
         BASE_DIR / "data/processed_modern_nba_with_players.csv",
         BASE_DIR / "data/processed_modern_nba.csv",
@@ -172,11 +157,9 @@ def _load_models_and_data() -> None:
             + ", ".join(str(p) for p in data_paths)
         )
 
-    # Basic normalization
     if "gameDate" in team_data_local.columns:
         team_data_local["gameDate"] = pd.to_datetime(team_data_local["gameDate"], errors="coerce")
 
-    # Determine flags
     nonlocal_has_players = all(
         col in team_data_local.columns
         for col in [
@@ -190,7 +173,6 @@ def _load_models_and_data() -> None:
 
     nonlocal_use_ewma = "teamScore_ewm" in team_data_local.columns
 
-    # Build feature list
     suffix = "_ewm" if nonlocal_use_ewma else "_roll10"
     base_features = [
         "home",
@@ -235,7 +217,6 @@ def _load_models_and_data() -> None:
 
     base_features.extend(["season_late", "season_mid"])  # order must match training
 
-    # Set globals last to avoid partial state
     team_data = team_data_local
     teams = sorted(team_data["teamName"].dropna().unique().tolist()) if "teamName" in team_data.columns else []
     has_player_features = nonlocal_has_players
@@ -243,40 +224,21 @@ def _load_models_and_data() -> None:
     feature_suffix = suffix
     feature_columns[:] = base_features
 
-    # Initialize SHAP explainers using Model-Agnostic approach (Permutation/Partition)
-    # This avoids internal tree parsing errors by treating the model as a function
-    # Note: team_data global is not set yet, use team_data_local
-    
     if clf is not None and team_data_local is not None:
         try:
-            # Create a background dataset (masker) from the training data distribution
-            # We use a small sample (e.g., 50 rows) to keep it fast
-            # Ensure we only use the feature columns
-            # Filter columns that actually exist in the data
-            # Note: season_late and season_mid might not be in team_data_local if they are created on the fly
-            # We need to ensure they exist in background data if the model expects them
-            
-            # Check which columns are missing from team_data_local but expected by feature_columns
             missing_cols = [c for c in feature_columns if c not in team_data_local.columns]
-            
-            # Create a local copy to add missing columns for background data
             bg_source = team_data_local.copy()
             for c in missing_cols:
                 if c in ['season_late', 'season_mid']:
-                    bg_source[c] = 0 # Default value
+                    bg_source[c] = 0
                 else:
                     bg_source[c] = 0
             
             available_features = feature_columns # Now we have all of them
             background_data = bg_source[available_features].sample(50, random_state=42).fillna(0)
             
-            # Use the predict_proba function for classification
-            # We need to wrap it to return only the positive class probability
             def clf_predict(X):
                 if isinstance(X, pd.DataFrame):
-                    # Ensure columns match what model expects (might need to reorder/filter)
-                    # For now, just pass through, assuming X has correct columns
-                    pass
                 return clf.predict_proba(X)[:, 1]
                 
             explainer_clf = shap.Explainer(clf_predict, background_data)
@@ -288,7 +250,6 @@ def _load_models_and_data() -> None:
 
     if reg_spread is not None and team_data_local is not None:
         try:
-            # Same logic for regression: ensure all features exist in background data
             missing_cols = [c for c in feature_columns if c not in team_data_local.columns]
             bg_source = team_data_local.copy()
             for c in missing_cols:
@@ -301,8 +262,6 @@ def _load_models_and_data() -> None:
             background_data = bg_source[available_features].sample(50, random_state=42).fillna(0)
             
             def reg_predict(X):
-                # if isinstance(X, pd.DataFrame):
-                #     X = X[feature_columns]
                 return reg_spread.predict(X)
                 
             explainer_reg = shap.Explainer(reg_predict, background_data)
@@ -312,7 +271,6 @@ def _load_models_and_data() -> None:
     else:
         explainer_reg = None
 
-    # Feature importance (optional)
     fi_paths = [
         BASE_DIR / "results/feature_importance_modern.csv",
         BASE_DIR / "results/feature_importance.csv",
@@ -344,7 +302,6 @@ def get_team_recent_stats(team_name: str, cutoff_date: Optional[pd.Timestamp] = 
 
 def build_features_for_prediction(home_team: str, away_team: str) -> Optional[Tuple[Dict[str, Any], pd.Series, pd.Series]]:
     assert team_data is not None
-    # Recent stats
     home_stats = get_team_recent_stats(home_team)
     away_stats = get_team_recent_stats(away_team)
     if home_stats is None or away_stats is None:
@@ -352,14 +309,12 @@ def build_features_for_prediction(home_team: str, away_team: str) -> Optional[Tu
 
     features: Dict[str, Any] = {}
 
-    # Basic context
     features["home"] = 1
     features["days_rest"] = home_stats.get("days_rest", 2)
     features["is_back_to_back"] = int(home_stats.get("is_back_to_back", 0))
     features["month"] = datetime.now().month
     features["streak"] = home_stats.get("streak", 0)
 
-    # Team stats (home)
     for stat in [
         "win_pct",
         "teamScore",
@@ -381,7 +336,6 @@ def build_features_for_prediction(home_team: str, away_team: str) -> Optional[Tu
         col_name = f"{stat}{feature_suffix}"
         features[col_name] = home_stats.get(col_name, 0)
 
-    # Opponent stats (away team's rolling stats)
     for stat in ["score", "assists", "rebounds", "fg_pct", "win_pct"]:
         if stat == "score":
             away_col = f"teamScore{feature_suffix}"
@@ -395,12 +349,10 @@ def build_features_for_prediction(home_team: str, away_team: str) -> Optional[Tu
             away_col = f"{stat}{feature_suffix}"
         features[f"opp_{stat}{feature_suffix}"] = away_stats.get(away_col, 0)
 
-    # Head-to-head and season part
     features["h2h_win_pct"] = home_stats.get("h2h_win_pct", 0.5)
     features["season_late"] = 0
     features["season_mid"] = 1
 
-    # Player features
     if has_player_features:
         for pf in [
             "top5_points_avg",
@@ -421,10 +373,8 @@ def get_season_stats(team_name: str) -> Optional[Dict[str, Any]]:
     if "gameDate" not in team_data.columns:
         return None
     
-    # Filter for 2025-26 regular season only (starting Oct 21, 2025)
     mask = (team_data["teamName"] == team_name) & (team_data["gameDate"] >= "2025-10-21")
     
-    # Exclude preseason if column exists
     if "seasonType" in team_data.columns:
         mask = mask & (team_data["seasonType"] != "Pre Season")
     
@@ -433,12 +383,10 @@ def get_season_stats(team_name: str) -> Optional[Dict[str, Any]]:
     if len(current_season) == 0:
         return None
     
-    # Calculate wins and losses from 'win' column
     wins = int(current_season["win"].sum()) if "win" in current_season.columns else 0
     games = len(current_season)
     losses = games - wins
     
-    # Calculate stats
     stats = {
         "games_played": games,
         "wins": wins,
@@ -453,12 +401,8 @@ def get_season_stats(team_name: str) -> Optional[Dict[str, Any]]:
     return stats
 
 
-# Initialize on import
 _load_models_and_data()
 
-# -----------------------------------------------------------------------------
-# Routes
-# -----------------------------------------------------------------------------
 @app.get("/health")
 def health() -> Any:
     return jsonify({
@@ -509,19 +453,15 @@ def predict() -> Any:
 
     features_dict, home_stats, away_stats = built
 
-    # Convert to DataFrame with correct column order
     X_pred = pd.DataFrame([features_dict])[feature_columns]
 
-    # Probabilities (home perspective)
     home_win_prob = float(clf.predict_proba(X_pred)[0, 1])
     away_win_prob = float(1.0 - home_win_prob)
 
-    # Spread (optional)
     spread_value: Optional[float] = None
     if reg_spread is not None:
         spread_value = float(reg_spread.predict(X_pred)[0])
 
-    # Winner and confidence
     if home_win_prob >= 0.5:
         predicted_winner = home_team
         confidence = home_win_prob
@@ -531,53 +471,38 @@ def predict() -> Any:
         confidence = away_win_prob
         prob_favors_home = False
 
-    # Consistency check
     consistency: Optional[bool] = None
     if spread_value is not None:
         spread_favors_home = spread_value > 0
         consistency = spread_favors_home == prob_favors_home
 
-    # Get season stats for both teams
     home_season_stats = get_season_stats(home_team)
     away_season_stats = get_season_stats(away_team)
 
-    # SHAP Explanations
     explanations = []
     if explainer_clf is not None:
         try:
-            # Calculate SHAP values using the Explainer API
-            # The model-agnostic explainer returns an Explanation object
-            # Ensure X_pred has the same columns as the background data
-            # The explainer was initialized with 'available_features' from team_data_local
-            # We need to make sure X_pred only contains those columns
-            
-            # Get the feature names from the explainer's masker
             if hasattr(explainer_clf.masker, 'feature_names'):
                  masker_features = explainer_clf.masker.feature_names
                  X_shap = X_pred[masker_features]
             else:
-                 # Fallback if masker doesn't have feature_names (unlikely for DataFrame masker)
                  X_shap = X_pred
                  
             shap_explanation = explainer_clf(X_shap)
             
-            # shap_explanation.values shape: (1, n_features)
             vals = shap_explanation.values[0]
             
-            # Create explanation list
             feature_names = X_pred.columns.tolist()
             feature_values = X_pred.iloc[0].tolist()
             
             for name, val, impact in zip(feature_names, feature_values, vals):
-                # Include all impacts; filter later if needed
                 explanations.append({
                     "feature": name,
                     "value": val,
-                    "impact": float(impact),  # contribution to model output
+                    "impact": float(impact),
                     "type": "positive" if impact > 0 else "negative"
                 })
             
-            # Sort by absolute impact and keep top 10
             explanations.sort(key=lambda x: abs(x["impact"]), reverse=True)
             
         except Exception as e:
@@ -600,10 +525,10 @@ def predict() -> Any:
             "prediction": {
                 "winner": predicted_winner,
                 "confidence": confidence,
-                "predicted_spread": spread_value,  # positive means home favored
+                "predicted_spread": spread_value,
                 "consistent": consistency,
             },
-            "explanations": explanations[:10], # Return top 10 factors
+            "explanations": explanations[:10],
             "season_stats": {
                 "home": home_season_stats,
                 "away": away_season_stats,
@@ -617,6 +542,5 @@ def predict() -> Any:
 
 
 if __name__ == "__main__":
-    # Use PORT environment variable if set, default to 5001
     port = int(os.getenv("PORT", "5001"))
     app.run(host="0.0.0.0", port=port, debug=False)
