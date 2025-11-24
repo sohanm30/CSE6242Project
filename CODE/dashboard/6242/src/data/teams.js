@@ -1,0 +1,36 @@
+import * as NBAIcons from 'react-nba-logos';
+
+export const TEAM_MAP = {
+  "Atlanta Hawks": { component: NBAIcons.ATL, name: "Atlanta Hawks" },
+  "Boston Celtics": { component: NBAIcons.BOS, name: "Boston Celtics" },
+  "Brooklyn Nets": { component: NBAIcons.BKN, name: "Brooklyn Nets" },
+  "Charlotte Hornets": { component: NBAIcons.CHA, name: "Charlotte Hornets" },
+  "Chicago Bulls": { component: NBAIcons.CHI, name: "Chicago Bulls" },
+  "Cleveland Cavaliers": { component: NBAIcons.CLE, name: "Cleveland Cavaliers" },
+  "Dallas Mavericks": { component: NBAIcons.DAL, name: "Dallas Mavericks" },
+  "Denver Nuggets": { component: NBAIcons.DEN, name: "Denver Nuggets" },
+  "Detroit Pistons": { component: NBAIcons.DET, name: "Detroit Pistons" },
+  "Golden State Warriors": { component: NBAIcons.GSW, name: "Golden State Warriors" },
+  "Houston Rockets": { component: NBAIcons.HOU, name: "Houston Rockets" },
+  "Indiana Pacers": { component: NBAIcons.IND, name: "Indiana Pacers" },
+  "Los Angeles Clippers": { component: NBAIcons.LAC, name: "Los Angeles Clippers" },
+  "Los Angeles Lakers": { component: NBAIcons.LAL, name: "Los Angeles Lakers" },
+  "Memphis Grizzlies": { component: NBAIcons.MEM, name: "Memphis Grizzlies" },
+  "Miami Heat": { component: NBAIcons.MIA, name: "Miami Heat" },
+  "Milwaukee Bucks": { component: NBAIcons.MIL, name: "Milwaukee Bucks" },
+  "Minnesota Timberwolves": { component: NBAIcons.MIN, name: "Minnesota Timberwolves" },
+  "New Orleans Pelicans": { component: NBAIcons.NOP, name: "New Orleans Pelicans" },
+  "New York Knicks": { component: NBAIcons.NYK, name: "New York Knicks" },
+  "Oklahoma City Thunder": { component: NBAIcons.OKC, name: "Oklahoma City Thunder" },
+  "Orlando Magic": { component: NBAIcons.ORL, name: "Orlando Magic" },
+  "Philadelphia 76ers": { component: NBAIcons.PHI, name: "Philadelphia 76ers" },
+  "Phoenix Suns": { component: NBAIcons.PHX, name: "Phoenix Suns" },
+  "Portland Trail Blazers": { component: NBAIcons.POR, name: "Portland Trail Blazers" },
+  "Sacramento Kings": { component: NBAIcons.SAC, name: "Sacramento Kings" },
+  "San Antonio Spurs": { component: NBAIcons.SAS, name: "San Antonio Spurs" },
+  "Toronto Raptors": { component: NBAIcons.TOR, name: "Toronto Raptors" },
+  "Utah Jazz": { component: NBAIcons.UTA, name: "Utah Jazz" },
+  "Washington Wizards": { component: NBAIcons.WAS, name: "Washington Wizards" },
+};
+
+export const TEAM_NAMES = Object.keys(TEAM_MAP);
